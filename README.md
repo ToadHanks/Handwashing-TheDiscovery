@@ -11,6 +11,10 @@ Project Description
 --------------------
 Reanalyse the data behind one of the most important discoveries of modern medicine: handwashing. 
 
+Output
+------
+![Image](https://github.com/opendatasurgeon/HandwashingAnalysis_r/blob/master/handwashing_graph.png?raw=true)
+
 Packages
 --------------------
 tidyverse, magrittr, rvest, lubridate, ggpomological, extrafont, magick
