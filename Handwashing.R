@@ -15,7 +15,7 @@ webpage <- xml2::read_html("https://en.wikipedia.org/wiki/Historical_mortality_r
 tables <- rvest::html_nodes(webpage, "table")
 
 #get the first table of Vienna Hospital where Handwashing was started
-vienna_hospital <- rvest::html_table(tables[grep("clinic at the Vienna General Hospital 1841-1849",
+vienna_hospital <- rvest::html_table(tables[grep("first clinic at the Vienna General Hospital 1841–1849",
                           tables,ignore.case = T)],fill = T)[[1]]
 
 #clean the data
