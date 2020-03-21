@@ -10,11 +10,15 @@ Mihir Patel
 
 Project Description
 --------------------
-Reanalyse the data behind one of the most important discoveries of modern medicine: handwashing. 
+Reanalyse the data behind one of the most important discoveries of modern medicine: handwashing. Scraped a table off of wikipedia page to show off little bit to be honest.
 
 Output
 ------
 ![Image](https://github.com/opendatasurgeon/HandwashingAnalysis_r/blob/master/handwashing_graph.png?raw=true)
+
+blog
+-----
+
 
 Packages
 --------------------
