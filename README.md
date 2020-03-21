@@ -22,7 +22,7 @@ Output
 
 blog
 -----
-
+[Read my blog here!](https://opendatasurgeon.github.io/handwashing/)
 
 Packages
 --------------------
