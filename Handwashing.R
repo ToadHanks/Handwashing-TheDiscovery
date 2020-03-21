@@ -1,59 +1,58 @@
-#Author: Mihir Patel
-
 #Load in  packages
 library(tidyverse)
+library(magrittr)
+library(rvest)
+library(lubridate)
+library(ggpomological)
+library(extrafont)
+library(magick)
 
-#Reading yearly_deaths_by_clinic.csv into yearly
-yearly <- read_csv("yearly_deaths_by_clinic.csv")
+#install.packages("vctrs", type = "source")
+#URL
+webpage <- xml2::read_html("https://en.wikipedia.org/wiki/Historical_mortality_rates_of_puerperal_fever#Monthly_mortality_rates_for_birthgiving_women_1841%E2%80%931849")
 
-#Print out yearly
-print(yearly)
+#get all the classes with tables
+tables <- rvest::html_nodes(webpage, "table")
 
-#Getting the number of deaths
-#Adding a new column to yearly with proportion of deaths per no. births
-yearly = yearly %>%mutate(proportion_deaths = deaths / births)
+#get the first table of Vienna Hospital where Handwashing was started
+vienna_hospital <- rvest::html_table(tables[grep("clinic at the Vienna General Hospital 1841-1849",
+                          tables,ignore.case = T)],fill = T)[[1]]
 
-#Print out yearly
-print(yearly)
+#clean the data
+vienna_hospital %<>% dplyr::select(-c(1,6)) %>% filter(!grepl('na', Births))
 
-#Death at the clinic
-options(repr.plot.width=7, repr.plot.height=4)
-#Plotting yearly proportion of deaths at the two clinics
-ggplot(yearly, aes(x=year,y = proportion_deaths,color=clinic))+geom_line()
+#change datastypes of everything but the "months"
+vienna_hospital %<>% dplyr::mutate_at(vars(Births, Deaths,`Rate (%)`), dplyr::funs(as.numeric))
 
-#Handwashing is introduced
+#changing to date is pretty tricky because we have both %B and %b
+a <- readr::parse_date(vienna_hospital$Month, "%b %Y") # Produces NA when format is not "%B %Y"
+b <- readr::parse_date(vienna_hospital$Month, "%B %Y") # Produces NA when format is not "%d.%m.%Y"
 
-#Read monthly_deaths.csv into monthly
-monthly <- read_csv("monthly_deaths.csv")
+a[is.na(a)] <- b[!is.na(b)] # Combine both while keeping their ranks, ignore the warning
 
-#Adding a new column with proportion of deaths per no. births
-monthly = monthly %>%mutate(proportion_deaths = deaths / births)
-#First rows in monthly
-head(monthly)
+vienna_hospital$Month <- lubridate::ymd(a) # Put it back in your dataframe
 
-#Effect of handwashing seen through plot
-ggplot(monthly, aes(x=date,y = proportion_deaths))+geom_line()
+colnames(vienna_hospital) <- c("Date", "Births", "Deaths", "Rate(%)")
 
-#Highlightinh the effects if handwashing
-
-#Apparently, from this date handwashing was made mandatory
-handwashing_start = as.Date('1847-06-01')
+#Apparently, from this date handwashing was made mandatory according to the Wikipedia Page
+mandatory_handwashing_date = as.Date('1847-06-01')
 
 #Added a TRUE/FALSE column to monthly called handwashing_started
-monthly = monthly%>%mutate(handwashing_started = (date >= handwashing_start))
+vienna_hospital <- vienna_hospital%>% mutate(handwashing_started = (Date >= mandatory_handwashing_date))
 
-#Plotting monthly proportion of deaths before and after handwashing
-ggplot(monthly, aes(x = date, y = proportion_deaths, color = handwashing_started))+geom_line()
+#plot
+line_plot <- ggplot2::ggplot(vienna_hospital, aes(x= Date, y = `Rate(%)`/100, color = handwashing_started))+
+            geom_line(show.legend = F, size= 1) +
+            labs(x = 'Year', y = '% monthly deaths', title = "Monthly deaths following the mandatory handwashing",
+                 subtitle = "at the Vienna Hospital for the years 1841 to 1849",
+                 caption = "*arrowhead & annotation were added with paint") +
+            scale_y_continuous(label = scales::percent) +
+            scale_color_pomological()+ theme(plot.caption = element_text(size=8, face="italic", color="lightpink2"))
 
-#National movement begins for handwashing
 
-#Calculating the mean proportion of deaths before and after handwashing.
-monthly_summary <- monthly %>% group_by(handwashing_started)%>%
-  summarise(mean_proportion_deaths = mean(proportion_deaths))
+#Apply the theme & save
+ggpomological::paint_pomological(
+                  line_plot + theme_pomological("Harrington", 16),
+                  res = 110)%>% 
+magick::image_write("handwashing_graph.png")
 
-#Printing out the summary
-print(monthly_summary)
-
-#Calculating a 95% Confidence intrerval using t.test 
-test_result <- t.test( proportion_deaths ~ handwashing_started, data = monthly)
-print(test_result)
